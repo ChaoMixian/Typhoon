@@ -3,25 +3,27 @@ package main
 import (
 	"log"
 
-	"Typhoon/config"
-	"Typhoon/routes"
-
-	"github.com/gin-gonic/gin"
+	"github.com/ChaoMixian/Typhoon/config"
+	"github.com/ChaoMixian/Typhoon/routes"
 )
 
 func main() {
-	// 加载配置
-	err := config.LoadConfig("./config.json")
+	// Load configuration
+	cfg, err := config.LoadConfig("config.json")
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatalf("Config loading failed: %v", err)
 	}
 
-	// 初始化 Gin
-	router := gin.Default()
+	// Print essential configuration
+	log.Printf("Proxy Mode: %s", cfg.Proxy.Mode)
+	log.Printf("DNS Service Enabled: %v", cfg.Proxy.DNS.Enabled)
+	log.Printf("Subscription Update Interval: %d seconds", cfg.SubscriptionUpdate.Interval)
 
-	// 注册路由
-	routes.RegisterRoutes(router)
+	// Initialize Gin router
+	router := routes.SetupRouter(cfg)
 
-	// 启动服务
-	router.Run(":8080")
+	// Start the server
+	if err := router.Run(":8080"); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
 }

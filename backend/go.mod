@@ -1,4 +1,4 @@
-module Typhoon
+module github.com/ChaoMixian/Typhoon
 
 go 1.22.2
 

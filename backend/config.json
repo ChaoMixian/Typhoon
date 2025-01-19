@@ -1,0 +1,30 @@
+{
+    "proxy": {
+        "mode": "transparent",
+        "listen_port": 1080,
+        "dns": {
+            "enabled": true,
+            "listen_port": 5553,
+            "upstream_dns": [
+                "8.8.8.8",
+                "8.8.4.4"
+            ],
+            "dnsHijaking": {
+                "enabled": true
+            }
+        }
+    },
+    "logging": {
+        "level": "info",
+        "file": "/var/log/typhoon.log"
+    },
+    "subscriptionUpdate": {
+        "enabled": true,
+        "interval": 86400,
+        "url": "https://example.com/subscription"
+    },
+    "api": {
+        "listen_port": 8080,
+        "token": "ttoken"
+    }
+}
