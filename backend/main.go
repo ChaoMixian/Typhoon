@@ -3,21 +3,25 @@ package main
 import (
 	"log"
 
-	"github.com/ChaoMixian/Typhoon/config"
-	"github.com/ChaoMixian/Typhoon/routes"
+	"Typhoon/config"
+	"Typhoon/routes"
 )
 
 func main() {
 	// Load configuration
-	cfg, err := config.LoadConfig("config.json")
-	if err != nil {
-		log.Fatalf("Config loading failed: %v", err)
-	}
+	// 指定配置文件路径，可以通过环境变量或命令行参数传递
+	configFilePath := "config.json"
+
+	// 初始化全局配置
+	_ = config.GetConfig(configFilePath)
+
+	// 获取全局配置
+	cfg := config.GetConfig("")
 
 	// Print essential configuration
 	log.Printf("Proxy Mode: %s", cfg.Proxy.Mode)
 	log.Printf("DNS Service Enabled: %v", cfg.Proxy.DNS.Enabled)
-	log.Printf("Subscription Update Interval: %d seconds", cfg.SubscriptionUpdate.Interval)
+	log.Printf("Subscription Update Interval: %d seconds", cfg.SubscriptionUpdate.IntervalSeconds)
 
 	// Initialize Gin router
 	router := routes.SetupRouter(cfg)
