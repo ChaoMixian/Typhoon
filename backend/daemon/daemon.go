@@ -111,6 +111,7 @@ func StartMihomoFromConfig() error {
 	configPath := cfg.Proxy.Mihomo.ConfigPath
 	runtimeConfigPath := cfg.Proxy.Mihomo.RuntimeConfigPath
 	controllerAddress := cfg.Proxy.Mihomo.ControllerAddress
+	port := cfg.Proxy.Mihomo.ListenPort
 
 	// 2. 校验文件是否存在
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
@@ -121,7 +122,7 @@ func StartMihomoFromConfig() error {
 	}
 
 	// 3. Patch 配置（先修改 configPath -> runtimeConfigPath）
-	if err := config.PatchMihomoConfig(configPath, runtimeConfigPath, controllerAddress); err != nil {
+	if err := config.PatchMihomoConfig(configPath, runtimeConfigPath, controllerAddress, port); err != nil {
 		return fmt.Errorf("failed to patch Mihomo config: %v", err)
 	}
 
@@ -143,4 +144,11 @@ func RestartMihomoFromConfig() error {
 	}
 	// 再启动
 	return StartMihomoFromConfig()
+}
+
+func IsMihomoRunning() bool {
+	mu.Lock()
+	defer mu.Unlock()
+
+	return mihomoProcess != nil && mihomoProcess.Process != nil
 }

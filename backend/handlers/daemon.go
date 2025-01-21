@@ -51,3 +51,13 @@ func GetMihomoOutputHandler(c *gin.Context) {
 		return true
 	})
 }
+
+func GetMihomoStatusHandler(c *gin.Context) {
+	// 检查 Mihomo 进程是否在运行
+	if daemon.IsMihomoRunning() {
+		c.JSON(http.StatusOK, gin.H{"status": "Mihomo is running"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "Mihomo is not running"})
+}

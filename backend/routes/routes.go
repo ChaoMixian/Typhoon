@@ -14,14 +14,11 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// API v1 routes
 	v1 := r.Group("/api/v1")
 	{
-		v1.POST("/mihomo/start", handlers.StartMihomoHandler)
-		v1.POST("/mihomo/stop", handlers.StopMihomoHandler)
-		v1.POST("/mihomo/restart", handlers.RestartMihomoHandler)
-		// v1.GET("/proxy/status", handlers.GetProxyStatus)
-		// v1.POST("/proxy/config", handlers.UpdateProxyConfig)
-		// v1.GET("/logs", handlers.GetLogs)
-		// v1.GET("/system/monitor", handlers.GetSystemStatus)
-		// v1.POST("/update/subscribe", handlers.UpdateSubscription)
+		v1.GET("/mihomo/start", handlers.StartMihomoHandler)
+		v1.GET("/mihomo/stop", handlers.StopMihomoHandler)
+		v1.GET("/mihomo/restart", handlers.RestartMihomoHandler)
+		v1.GET("/mihomo/status", handlers.GetMihomoStatusHandler)
+
 	}
 
 	return r

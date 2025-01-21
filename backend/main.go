@@ -21,7 +21,7 @@ func main() {
 	// Print essential configuration
 	log.Printf("Proxy Mode: %s", cfg.Proxy.Mode)
 	log.Printf("DNS Service Enabled: %v", cfg.Proxy.DNS.Enabled)
-	log.Printf("Subscription Update Interval: %d seconds", cfg.SubscriptionUpdate.IntervalSeconds)
+	log.Printf("Subscription Update Interval: %d seconds", cfg.SubscriptionManage.IntervalSeconds)
 
 	// Initialize Gin router
 	router := routes.SetupRouter(cfg)
