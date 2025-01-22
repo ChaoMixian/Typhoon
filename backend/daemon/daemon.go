@@ -105,7 +105,7 @@ func captureOutput() {
 // StartMihomoFromConfig 加载配置、校验文件、Patch 配置并启动
 func StartMihomoFromConfig() error {
 	// 1. 加载全局配置
-	cfg := config.GetConfig("")
+	cfg := config.GetConfig(config.ConfigFilePath, false)
 
 	binaryPath := cfg.Proxy.Mihomo.BinPath
 	configPath := cfg.Proxy.Mihomo.ConfigPath

@@ -7,13 +7,20 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
+)
+
+var (
+	instance       *Config
+	once           sync.Once
+	mu             sync.Mutex // 用于保护实例的并发访问
+	ConfigFilePath = "config.json"
 )
 
 type Config struct {
 	Proxy struct {
 		CurrentCore string `json:"currentCore"` // 当前使用的核心， mihomo/xray
 		Mihomo      struct {
-			Version           string `json:"version"`           // Mihomo 核心版本
 			RuntimeDir        string `json:"runtimeDir"`        // Mihomo 运行时目录
 			BinPath           string `json:"binPath"`           // Mihomo 二进制文件路径
 			ConfigPath        string `json:"configPath"`        // 原始配置文件路径
@@ -62,7 +69,6 @@ func DefaultConfig() Config {
 		Proxy: struct {
 			CurrentCore string `json:"currentCore"`
 			Mihomo      struct {
-				Version           string `json:"version"`
 				RuntimeDir        string `json:"runtimeDir"`
 				BinPath           string `json:"binPath"`
 				ConfigPath        string `json:"configPath"`
@@ -90,7 +96,6 @@ func DefaultConfig() Config {
 		}{
 			CurrentCore: "mihomo", // 默认使用 mihomo 核心
 			Mihomo: struct {
-				Version           string `json:"version"`
 				RuntimeDir        string `json:"runtimeDir"`
 				BinPath           string `json:"binPath"`
 				ConfigPath        string `json:"configPath"`
@@ -103,7 +108,6 @@ func DefaultConfig() Config {
 					DNSHijaking string `json:"dnsHijaking"`
 				} `json:"tun"`
 			}{
-				Version:           "",             // 默认版本
 				RuntimeDir:        "",             // 默认运行时目录
 				BinPath:           "",             // 默认二进制文件路径
 				ConfigPath:        "",             // 默认配置文件路径
@@ -239,13 +243,81 @@ func LoadConfig(filePath string) (*Config, error) {
 }
 
 // GetConfig returns the singleton configuration instance
-func GetConfig(filePath string) *Config {
-	once.Do(func() {
+// func GetConfig(filePath string) *Config {
+// 	mu.Lock()
+// 	defer mu.Unlock()
+
+// 	once.Do(func() {
+// 		cfg, err := LoadConfig(filePath)
+// 		if err != nil {
+// 			log.Fatalf("Config loading failed: %v", err)
+// 		}
+// 		instance = cfg
+// 	})
+// 	return instance
+// }
+
+// GetConfig returns the singleton configuration instance
+// If reload is true, it reloads the configuration from the file
+func GetConfig(filePath string, reload bool) *Config {
+	mu.Lock()
+	defer mu.Unlock()
+
+	// 如果需要重新加载配置
+	if reload || instance == nil {
 		cfg, err := LoadConfig(filePath)
 		if err != nil {
 			log.Fatalf("Config loading failed: %v", err)
 		}
 		instance = cfg
-	})
+	}
+
 	return instance
+}
+
+// Unused, but kept for reference
+// ReloadConfig reloads the configuration from the file and updates the global instance.
+func ReloadConfig(filePath string) error {
+	mu.Lock()
+	defer mu.Unlock()
+
+	// 加载配置文件
+	cfg, err := LoadConfig(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to reload config: %v", err)
+	}
+
+	// 更新全局配置实例
+	instance = cfg
+	log.Println("Configuration reloaded successfully.")
+	return nil
+}
+
+// UpdateConfig modifies specific fields in the configuration and saves it to the file
+func UpdateConfig(filePath string, updateFunc func(*Config) error) error {
+	// 加载当前配置
+	cfg, err := LoadConfig(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %v", err)
+	}
+
+	// 应用更新逻辑
+	if err := updateFunc(cfg); err != nil {
+		return fmt.Errorf("failed to update config: %v", err)
+	}
+
+	// 将更新后的配置写回文件
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to open config file for writing: %v", err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(cfg); err != nil {
+		return fmt.Errorf("failed to write updated config: %v", err)
+	}
+
+	return nil
 }

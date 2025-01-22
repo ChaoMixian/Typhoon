@@ -3,14 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
-	"sync"
 
 	"gopkg.in/yaml.v3"
-)
-
-var (
-	instance *Config
-	once     sync.Once
 )
 
 type MihomoConfig struct {
@@ -39,7 +33,7 @@ func PatchMihomoConfig(inputPath, outputPath, controllerAddress string, port int
 	}
 
 	// 获取全局配置
-	cfg := GetConfig("")
+	cfg := GetConfig(ConfigFilePath, false)
 
 	// 修改配置字段
 	mihomoCfg.ExternalController = cfg.Proxy.Mihomo.ControllerAddress
