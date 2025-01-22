@@ -99,7 +99,5 @@ func SelectAssetURL(release *GitHubRelease) (string, error) {
 func ContainsArch(assetName, arch string) bool {
 	return (arch == "amd64" && utils.ContainsAll(assetName, "amd64", "linux") && !utils.ContainsAny(assetName, "compatible", "go")) ||
 		(arch == "arm64" && utils.ContainsAll(assetName, "arm64", "linux") ||
-			(arch == "armv5" && utils.ContainsAll(assetName, "armv5", "linux")) ||
-			(arch == "armv6" && utils.ContainsAll(assetName, "armv6", "linux")) ||
-			(arch == "armv7" && utils.ContainsAll(assetName, "armv7", "linux")))
+			(arch == "arm" && utils.ContainsAll(assetName, "arm", "linux")) && !utils.ContainsAny(assetName, "armv5", "armv6", "armv7"))
 }
