@@ -16,7 +16,7 @@ import (
 // UpdateMihomoHandler handles the Mihomo update process
 func UpdateMihomoHandler(c *gin.Context) {
 	cfg := config.GetConfig(config.ConfigFilePath, true)
-
+	// log.Println(cfg.Proxy.Mihomo.BinPath)
 	// 从 URL 参数获取 downloadURL 和目标路径
 	destPath := c.DefaultQuery("destPath", path.Join(cfg.Proxy.Mihomo.BinPath, "..", "mihomo_new"))
 	finalPath := c.DefaultQuery("finalPath", path.Join(cfg.Proxy.Mihomo.BinPath, "..", "mihomo"))
@@ -33,7 +33,7 @@ func UpdateMihomoHandler(c *gin.Context) {
 		fmt.Printf("Progress: %.2f%%\n", progress)
 	})
 	if err != nil {
-		log.Fatalf("Update failed: %v", err)
+		log.Printf("Update failed: %v", err)
 	}
 
 	// Reload the configuration

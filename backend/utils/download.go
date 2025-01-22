@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 // Download downloads a file from the given URL and writes it to the specified destination.
@@ -40,6 +41,12 @@ func Download(url, destPath string) error {
 // DownloadWithProgress downloads a file from the given URL and writes it to the specified destination.
 // It reports progress via a callback function.
 func DownloadWithProgress(url, destPath string, progressCallback func(downloaded, total int64)) error {
+	// 确保目标文件夹存在
+	dir := filepath.Dir(destPath)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
+
 	// 创建 HTTP 请求
 	resp, err := http.Get(url)
 	if err != nil {

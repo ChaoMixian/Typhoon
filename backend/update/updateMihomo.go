@@ -84,11 +84,11 @@ func FetchGitHubRelease(owner, repo string) (*GitHubRelease, error) {
 // selectAssetURL selects a .gz download URL based on system architecture
 func SelectAssetURL(release *GitHubRelease) (string, error) {
 	arch := runtime.GOARCH
-	log.Default().Println("arch: ", arch)
+	log.Println("arch: ", arch)
 	for _, asset := range release.Assets {
 
 		if strings.HasSuffix(asset.Name, ".gz") && ContainsArch(asset.Name, arch) {
-			log.Default().Println("asset.Name: ", asset.Name)
+			log.Println("asset.Name: ", asset.Name)
 			return asset.URL, nil
 		}
 	}
