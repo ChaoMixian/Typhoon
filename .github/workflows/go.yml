@@ -56,9 +56,9 @@ jobs:
       run: |
         mkdir -p build
         if [ "${{ matrix.goarch }}" == "arm" ]; then
-          GOARM=${{ matrix.goarm }} go build -v -o build/Typhoon main.go
+          GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} go build -v -o build/Typhoon main.go
         else
-          go build -v -o build/Typhoon main.go
+          GOARCH=${{ matrix.goarch }} go build -v -o build/Typhoon main.go
         fi
 
     - name: Compress Binary
