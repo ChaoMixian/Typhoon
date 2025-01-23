@@ -1,6 +1,5 @@
 # This workflow will build a golang project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
 name: Go
 
 on:
@@ -14,20 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - goos: linux
-            goarch: arm
-            goarm: 5
-          - goos: linux
-            goarch: arm
-            goarm: 6
-          - goos: linux
-            goarch: arm
-            goarm: 7
-          - goos: linux
-            goarch: amd64
-          - goos: linux
-            goarch: arm64
+        jobs:
+          - { goos: linux, goarch: '386', output: '386' }
+          - { goos: linux, goarch: amd64, goamd64: v3, output: amd64 }
+          - { goos: linux, goarch: arm64, output: arm64 }
+          - { goos: linux, goarch: arm, goarm: '5', output: armv5 }
+          - { goos: linux, goarch: arm, goarm: '6', output: armv6 }
+          - { goos: linux, goarch: arm, goarm: '7', output: armv7 }
+          - { goos: linux, goarch: arm, goarm: '8', output: armv8 }
 
     steps:
     - uses: actions/checkout@v4
@@ -43,19 +36,20 @@ jobs:
 
     - name: Build
       run: |
-        if [ "${{ matrix.goarch }}" == "arm" ]; then
-          GOARM=${{ matrix.goarm }} go build -o Typhoon main.go
-        else
-          go build -o Typhoon main.go
-        fi
+        GOOS=${{ matrix.jobs.goos }} \
+        GOARCH=${{ matrix.jobs.goarch }} \
+        ${{ matrix.jobs.goamd64 && 'GOAMD64=${{ matrix.jobs.goamd64 }}' || '' }} \
+        ${{ matrix.jobs.goarm && 'GOARM=${{ matrix.jobs.goarm }}' || '' }} \
+        go build -o Typhoon
       working-directory: ./backend
 
     - name: Compress Binary
-      run: tar -czvf Typhoon_${{ matrix.goos }}_${{ matrix.goarch }}${{ matrix.goarm || '' }}.tar.gz Typhoon
+      run: |
+        tar -czvf Typhoon_${{ matrix.jobs.goos }}_${{ matrix.jobs.goarch }}${{ matrix.jobs.goarm && '_${{ matrix.jobs.goarm }}' || '' }}.tar.gz Typhoon
       working-directory: ./backend
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: Typhoon_${{ matrix.goos }}_${{ matrix.goarch }}${{ matrix.goarm || '' }}
-        path: ./backend/Typhoon_${{ matrix.goos }}_${{ matrix.goarch }}${{ matrix.goarm || '' }}.tar.gz
+        name: Typhoon_${{ matrix.jobs.goos }}_${{ matrix.jobs.goarch }}${{ matrix.jobs.goarm && '_${{ matrix.jobs.goarm }}' || '' }}
+        path: ./backend/Typhoon_${{ matrix.jobs.goos }}_${{ matrix.jobs.goarch }}${{ matrix.jobs.goarm && '_${{ matrix.jobs.goarm }}' || '' }}.tar.gz
