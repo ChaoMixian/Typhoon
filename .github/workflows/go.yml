@@ -36,16 +36,24 @@ jobs:
 
     - name: Build
       run: |
-        GOOS=${{ matrix.jobs.goos }} \
-        GOARCH=${{ matrix.jobs.goarch }} \
-        ${{ matrix.jobs.goamd64 && 'GOAMD64=${{ matrix.jobs.goamd64 }}' || '' }} \
-        ${{ matrix.jobs.goarm && 'GOARM=${{ matrix.jobs.goarm }}' || '' }} \
+        export GOOS=${{ matrix.jobs.goos }}
+        export GOARCH=${{ matrix.jobs.goarch }}
+        if [ -n "${{ matrix.jobs.goamd64 }}" ]; then
+          export GOAMD64=${{ matrix.jobs.goamd64 }}
+        fi
+        if [ -n "${{ matrix.jobs.goarm }}" ]; then
+          export GOARM=${{ matrix.jobs.goarm }}
+        fi
         go build -o Typhoon
       working-directory: ./backend
 
     - name: Compress Binary
       run: |
-        tar -czvf Typhoon_${{ matrix.jobs.goos }}_${{ matrix.jobs.goarch }}${{ matrix.jobs.goarm && '_${{ matrix.jobs.goarm }}' || '' }}.tar.gz Typhoon
+        TAR_NAME=Typhoon_${{ matrix.jobs.goos }}_${{ matrix.jobs.goarch }}
+        if [ -n "${{ matrix.jobs.goarm }}" ]; then
+          TAR_NAME=${TAR_NAME}_${{ matrix.jobs.goarm }}
+        fi
+        tar -czvf ${TAR_NAME}.tar.gz Typhoon
       working-directory: ./backend
 
     - name: Upload Artifact
