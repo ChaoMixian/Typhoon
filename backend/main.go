@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strconv"
 
 	"Typhoon/config"
 	"Typhoon/routes"
@@ -24,8 +25,7 @@ func main() {
 	// Initialize Gin router
 	router := routes.SetupRouter(cfg)
 
-	// Start the server
-	if err := router.Run(":8080"); err != nil {
+	if err := router.Run(":" + strconv.Itoa(cfg.API.ListenPort)); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

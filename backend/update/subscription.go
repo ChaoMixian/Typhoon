@@ -7,24 +7,49 @@ import (
 	"path"
 )
 
-func UpdateSubscriptions() error {
+type SubscriptionUpdateResult struct {
+	Name    string `json:"name"`
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
+}
+
+func UpdateSubscriptions() ([]SubscriptionUpdateResult, error) {
 	// Update the subscriptions
 	cfg := config.GetConfig(config.ConfigFilePath, false)
 	subscriptions := cfg.SubscriptionManage.Subscriptions
+	results := make([]SubscriptionUpdateResult, 0)
 
-	for _, subscription := range subscriptions {
+	for i, subscription := range subscriptions {
 		// Update the subscription
+
+		result := SubscriptionUpdateResult{
+			Name:    subscription.Name,
+			Success: true,
+		}
+
 		configPath := path.Join(utils.GetExecutableDir(), "mihomo", "config", subscription.Name, "config.yaml")
-		// if err := utils.Download(subscription.URL, configPath); err != nil {
-		// 	return fmt.Errorf("failed to download file: %v", err)
-		// }
 		err := utils.DownloadWithProgress(subscription.URL, configPath, func(downloaded, total int64) {
 			progress := float64(downloaded) / float64(total) * 100
 			log.Printf("Progress: %.2f%%", progress)
 		})
 		if err != nil {
-			log.Fatalf("Download failed: %v", err)
+			result.Success = false
+			result.Error = err.Error()
+			results = append(results, result)
+			log.Printf("failed to download %s: %v", subscription.Name, err) // 记录错误但继续执行
+			continue                                                        // 跳过当前订阅，继续处理下一个
 		}
+
+		// Modify the subscription path configuration
+		subscriptions[i].Path = configPath
+
+		results = append(results, result)
+		log.Printf("Subscription %s updated", subscription.Name)
 	}
-	return nil
+	cfg.SubscriptionManage.Subscriptions = subscriptions
+
+	config.SaveConfig(config.ConfigFilePath, cfg)
+	config.ReloadConfig(config.ConfigFilePath)
+
+	return results, nil
 }

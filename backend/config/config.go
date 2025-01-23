@@ -11,20 +11,19 @@ import (
 )
 
 var (
-	instance       *Config
-	once           sync.Once
+	instance *Config
+	// once           sync.Once
 	mu             sync.Mutex // 用于保护实例的并发访问
 	ConfigFilePath = "config.json"
 )
 
+// 我觉得态度要强硬一点，配置文件都给我老实在execpath下，不然就报错
 type Config struct {
 	Proxy struct {
 		CurrentCore string `json:"currentCore"` // 当前使用的核心， mihomo/xray
 		Mihomo      struct {
-			RuntimeDir        string `json:"runtimeDir"`        // Mihomo 运行时目录
 			BinPath           string `json:"binPath"`           // Mihomo 二进制文件路径
-			ConfigPath        string `json:"configPath"`        // 原始配置文件路径
-			RuntimeConfigPath string `json:"runtimeConfigPath"` // 运行时动态配置文件路径
+			CurrentConfig     string `json:"currentConfig"`     // 当前配置文件名称
 			ControllerAddress string `json:"controllerAddress"` // Mihomo API 服务地址
 			ListenPort        int    `json:"listenPort"`        // Mihomo 监听端口
 			TUN               struct {
@@ -56,6 +55,7 @@ type Config struct {
 		Subscriptions   []struct {
 			Name string `json:"name"` // 订阅名称
 			URL  string `json:"url"`  // 订阅链接
+			Path string `json:"path"` // 订阅配置文件路径
 		} `json:"subscriptions"`
 	} `json:"subscriptionManage"`
 	API struct {
@@ -69,10 +69,8 @@ func DefaultConfig() Config {
 		Proxy: struct {
 			CurrentCore string `json:"currentCore"`
 			Mihomo      struct {
-				RuntimeDir        string `json:"runtimeDir"`
 				BinPath           string `json:"binPath"`
-				ConfigPath        string `json:"configPath"`
-				RuntimeConfigPath string `json:"runtimeConfigPath"`
+				CurrentConfig     string `json:"currentConfig"`
 				ControllerAddress string `json:"controllerAddress"`
 				ListenPort        int    `json:"listenPort"`
 				TUN               struct {
@@ -96,10 +94,8 @@ func DefaultConfig() Config {
 		}{
 			CurrentCore: "mihomo", // 默认使用 mihomo 核心
 			Mihomo: struct {
-				RuntimeDir        string `json:"runtimeDir"`
 				BinPath           string `json:"binPath"`
-				ConfigPath        string `json:"configPath"`
-				RuntimeConfigPath string `json:"runtimeConfigPath"`
+				CurrentConfig     string `json:"currentConfig"`
 				ControllerAddress string `json:"controllerAddress"`
 				ListenPort        int    `json:"listenPort"`
 				TUN               struct {
@@ -108,10 +104,8 @@ func DefaultConfig() Config {
 					DNSHijaking string `json:"dnsHijaking"`
 				} `json:"tun"`
 			}{
-				RuntimeDir:        "",             // 默认运行时目录
 				BinPath:           "",             // 默认二进制文件路径
-				ConfigPath:        "",             // 默认配置文件路径
-				RuntimeConfigPath: "",             // 默认运行时配置路径
+				CurrentConfig:     "",             // 默认配置文件名称
 				ControllerAddress: "0.0.0.0:9999", // 默认 API 地址
 				ListenPort:        7890,           // 默认监听端口
 				TUN: struct {
@@ -171,6 +165,7 @@ func DefaultConfig() Config {
 			Subscriptions   []struct {
 				Name string `json:"name"`
 				URL  string `json:"url"`
+				Path string `json:"path"`
 			} `json:"subscriptions"`
 		}{
 			Enabled:         true,
@@ -178,6 +173,7 @@ func DefaultConfig() Config {
 			Subscriptions: []struct {
 				Name string `json:"name"`
 				URL  string `json:"url"`
+				Path string `json:"path"`
 			}{},
 		},
 		API: struct {
@@ -232,12 +228,12 @@ func LoadConfig(filePath string) (*Config, error) {
 	if config.Proxy.Mihomo.BinPath == "" {
 		config.Proxy.Mihomo.BinPath = filepath.Join(executableDir, "mihomo", "mihomo")
 	}
-	if config.Proxy.Mihomo.ConfigPath == "" {
-		config.Proxy.Mihomo.ConfigPath = filepath.Join(executableDir, "mihomo", "config.yaml")
-	}
-	if config.Proxy.Mihomo.RuntimeConfigPath == "" {
-		config.Proxy.Mihomo.RuntimeConfigPath = filepath.Join(executableDir, "mihomo", "mihomo_runtime.yaml")
-	}
+	// if config.Proxy.Mihomo.ConfigPath == "" {
+	// 	config.Proxy.Mihomo.ConfigPath = filepath.Join(executableDir, "mihomo", "config.yaml")
+	// }
+	// if config.Proxy.Mihomo.RuntimeConfigPath == "" {
+	// 	config.Proxy.Mihomo.RuntimeConfigPath = filepath.Join(executableDir, "mihomo", "mihomo_runtime.yaml")
+	// }
 
 	return &config, nil
 }
@@ -293,6 +289,23 @@ func ReloadConfig(filePath string) error {
 	return nil
 }
 
+// SaveConfig saves the configuration to the file
+func SaveConfig(filePath string, cfg *Config) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to open config file for writing: %v", err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(cfg); err != nil {
+		return fmt.Errorf("failed to write config: %v", err)
+	}
+
+	return nil
+}
+
 // UpdateConfig modifies specific fields in the configuration and saves it to the file
 func UpdateConfig(filePath string, updateFunc func(*Config) error) error {
 	// 加载当前配置
@@ -307,17 +320,15 @@ func UpdateConfig(filePath string, updateFunc func(*Config) error) error {
 	}
 
 	// 将更新后的配置写回文件
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to open config file for writing: %v", err)
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(cfg); err != nil {
-		return fmt.Errorf("failed to write updated config: %v", err)
+	if err := SaveConfig(filePath, cfg); err != nil {
+		return nil
 	}
 
+	// 重新加载配置
+	if err := ReloadConfig(filePath); err != nil {
+		return fmt.Errorf("failed to reload config: %v", err)
+	}
+
+	fmt.Printf("Configuration updated successfully.")
 	return nil
 }

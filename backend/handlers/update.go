@@ -49,9 +49,17 @@ func UpdateMihomoHandler(c *gin.Context) {
 // UpdateSubscriptionsHandler handles the subscription update process
 func UpdateSubscriptionsHandler(c *gin.Context) {
 	// 更新订阅
-	if err := update.UpdateSubscriptions(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	results, err := update.UpdateSubscriptions()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "配置保存失败",
+			"details": err.Error(),
+			"results": results,
+		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "Subscriptions updated successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "Subscriptions updated successfully",
+		"results": results,
+	})
 }

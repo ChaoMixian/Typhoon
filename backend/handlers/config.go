@@ -26,6 +26,7 @@ func convertToStringSlice(value interface{}) []string {
 func convertToSubscriptionSlice(value interface{}) []struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
+	Path string `json:"path"`
 } {
 	values, ok := value.([]interface{})
 	if !ok {
@@ -35,19 +36,37 @@ func convertToSubscriptionSlice(value interface{}) []struct {
 	result := make([]struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
+		Path string `json:"path"`
 	}, len(values))
 
 	for i, v := range values {
 		sub := v.(map[string]interface{})
+		path, ok := sub["path"].(string)
+		if !ok {
+			path = "" // 如果没有提供 path 字段，则设置为空字符串
+		}
 		result[i] = struct {
 			Name string `json:"name"`
 			URL  string `json:"url"`
+			Path string `json:"path"`
 		}{
 			Name: sub["name"].(string),
 			URL:  sub["url"].(string),
+			Path: path,
 		}
 	}
 	return result
+}
+
+// ReloadConfigHandler handles API requests to reload configuration
+func ReloadConfigHandler(c *gin.Context) {
+	// 重新加载配置
+	if config.GetConfig(config.ConfigFilePath, true) == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reload the configuration"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Configuration reloaded successfully"})
 }
 
 // UpdateConfigHandler handles API requests to update configuration
@@ -55,7 +74,7 @@ func UpdateConfigHandler(c *gin.Context) {
 	// 获取配置文件路径
 	filePath := c.Query("filePath")
 	if filePath == "" {
-		filePath = "config.json" // 默认配置文件路径
+		filePath = config.ConfigFilePath // 默认配置文件路径
 	}
 
 	// 获取要更新的字段和值
@@ -74,14 +93,10 @@ func UpdateConfigHandler(c *gin.Context) {
 				cfg.Proxy.CurrentCore = value.(string)
 			case "proxy.mihomo.listenPort":
 				cfg.Proxy.Mihomo.ListenPort = int(value.(float64))
-			case "proxy.mihomo.runtimeDir":
-				cfg.Proxy.Mihomo.RuntimeDir = value.(string)
 			case "proxy.mihomo.binPath":
 				cfg.Proxy.Mihomo.BinPath = value.(string)
-			case "proxy.mihomo.configPath":
-				cfg.Proxy.Mihomo.ConfigPath = value.(string)
-			case "proxy.mihomo.runtimeConfigPath":
-				cfg.Proxy.Mihomo.RuntimeConfigPath = value.(string)
+			case "proxy.mihomo.currentConfig":
+				cfg.Proxy.Mihomo.CurrentConfig = value.(string)
 			case "proxy.mihomo.controllerAddress":
 				cfg.Proxy.Mihomo.ControllerAddress = value.(string)
 			case "proxy.mihomo.tun.enabled":

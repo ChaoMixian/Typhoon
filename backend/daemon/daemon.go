@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"Typhoon/config"
+	"Typhoon/utils"
 )
 
 // 全局变量
@@ -108,8 +109,10 @@ func StartMihomoFromConfig() error {
 	cfg := config.GetConfig(config.ConfigFilePath, false)
 
 	binaryPath := cfg.Proxy.Mihomo.BinPath
-	configPath := cfg.Proxy.Mihomo.ConfigPath
-	runtimeConfigPath := cfg.Proxy.Mihomo.RuntimeConfigPath
+	// configPath := cfg.Proxy.Mihomo.ConfigPath
+	// runtimeConfigPath := cfg.Proxy.Mihomo.RuntimeConfigPath
+	configPath, runtimeConfigPath := utils.GetMihomoConfigPath(cfg.Proxy.Mihomo.CurrentConfig)
+	log.Printf("configPath: %s, runtimeConfigPath: %s", configPath, runtimeConfigPath)
 	controllerAddress := cfg.Proxy.Mihomo.ControllerAddress
 	port := cfg.Proxy.Mihomo.ListenPort
 
