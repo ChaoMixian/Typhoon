@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,7 +9,7 @@ import (
 // GetExecutableDir returns the directory of the executable file
 func GetExecutableDir() string {
 	executablePath, err := os.Executable()
-	fmt.Printf("executablePath: %v\n", executablePath)
+	// fmt.Printf("executablePath: %v\n", executablePath)
 	if err != nil {
 		log.Printf("Failed to get executable path: %v", err)
 	}
