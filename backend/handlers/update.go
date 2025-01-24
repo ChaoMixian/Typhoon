@@ -34,11 +34,15 @@ func UpdateMihomoHandler(c *gin.Context) {
 	})
 	if err != nil {
 		log.Printf("Update failed: %v", err)
+		fmt.Fprintf(c.Writer, "data: {\"status\": \"failed\", \"error\": \"%s\"}\n\n", err.Error())
+		c.Writer.(http.Flusher).Flush()
 	}
 
 	// Reload the configuration
 	if config.GetConfig(config.ConfigFilePath, true) == nil {
 		log.Fatalf("Failed to reload the configuration")
+		fmt.Fprintf(c.Writer, "data: {\"status\": \"failed\", \"error\": \"Failed to reload the configuration\"}\n\n")
+		c.Writer.(http.Flusher).Flush()
 	}
 
 	// 通知前端完成

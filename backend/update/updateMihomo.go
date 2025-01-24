@@ -42,17 +42,22 @@ func UpdateMihomo(owner, repo, destPath, finalPath string, progressCallback func
 		return fmt.Errorf("failed to download file: %v", err)
 	}
 
-	// Step 5: Decompress the file
+	// Step 5: Check if directory exists
+	if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
+
+	// Step 6: Decompress the file
 	if err := utils.DecompressGz(downloadPath, destPath); err != nil {
 		return fmt.Errorf("failed to decompress file: %v", err)
 	}
 
-	// Step 6: Replace the old version
+	// Step 7: Replace the old version
 	if err := utils.ReplaceOldVersion(destPath, finalPath); err != nil {
 		return fmt.Errorf("failed to replace old version: %v", err)
 	}
 
-	//Step 7: Set execute permission
+	//Step 8 Set execute permission
 	if err := os.Chmod(finalPath, 0755); err != nil {
 		return fmt.Errorf("failed to set execute permission: %v", err)
 	}

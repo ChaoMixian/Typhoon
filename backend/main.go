@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"strconv"
 
@@ -10,6 +11,10 @@ import (
 
 func main() {
 	// Load configuration
+
+	configFilePath := flag.String("config", config.ConfigFilePath, "Path to the configuration file")
+	flag.Parse()
+	config.ConfigFilePath = *configFilePath
 
 	// 初始化全局配置
 	_ = config.GetConfig(config.ConfigFilePath, true)

@@ -8,8 +8,14 @@
             "name": "Launch Package",
             "type": "go",
             "request": "launch",
-            "mode": "auto",
-            "program": "${fileDirname}"
+            "mode": "debug",
+            "program": "${workspaceFolder}/backend", // 设置代码的路径
+            "output": "${workspaceFolder}/backend/tests/Typhoon_test", // 指定编译文件路径
+            "cwd": "${workspaceFolder}/backend/tests", // 指定运行时的工作目录
+            "args": [], // 如果有额外的运行参数，可以在这里添加
+            "env": {
+                "DEBUG": "true"
+            }
         }
     ]
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
 )
@@ -14,7 +15,7 @@ var (
 	instance *Config
 	// once           sync.Once
 	mu             sync.Mutex // 用于保护实例的并发访问
-	ConfigFilePath = "config.json"
+	ConfigFilePath = path.Join(utils.GetExecutableDir(), "config.json")
 )
 
 // 我觉得态度要强硬一点，配置文件都给我老实在execpath下，不然就报错

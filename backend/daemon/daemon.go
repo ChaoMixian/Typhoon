@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"sync"
 	"syscall"
 
@@ -130,7 +131,7 @@ func StartMihomoFromConfig() error {
 	}
 
 	// 4. 组装启动参数
-	args := []string{"-f", runtimeConfigPath}
+	args := []string{"-d", path.Dir(binaryPath), "-f", runtimeConfigPath}
 
 	// 5. 调用原有的 StartMihomo
 	if err := StartMihomo(binaryPath, args); err != nil {
