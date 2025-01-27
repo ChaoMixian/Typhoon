@@ -22,6 +22,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		v1.GET("/subscription/update", handlers.UpdateSubscriptionsHandler)
 		v1.PATCH("/config/update", handlers.UpdateConfigHandler)
 		v1.GET("/config/reload", handlers.ReloadConfigHandler)
+		v1.Any("/mihomo/*path", handlers.ReverseProxyHandler)
 	}
 
 	return r
