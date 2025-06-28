@@ -86,23 +86,41 @@ func FetchGitHubRelease(owner, repo string) (*GitHubRelease, error) {
 	return &release, nil
 }
 
-// selectAssetURL selects a .gz download URL based on system architecture
+// selectAssetURL selects a .gz download URL based on system architecture and OS
 func SelectAssetURL(release *GitHubRelease) (string, error) {
+	goos := runtime.GOOS
 	arch := runtime.GOARCH
-	log.Println("arch: ", arch)
-	for _, asset := range release.Assets {
+	log.Printf("platform: %s/%s\n", goos, arch)
 
-		if strings.HasSuffix(asset.Name, ".gz") && ContainsArch(asset.Name, arch) {
-			log.Println("asset.Name: ", asset.Name)
+	for _, asset := range release.Assets {
+		if strings.HasSuffix(asset.Name, ".gz") && ContainsArchAndOS(asset.Name, arch, goos) {
+			log.Println("asset.Name:", asset.Name)
 			return asset.URL, nil
 		}
 	}
-	return "", fmt.Errorf("no suitable .gz asset found for architecture: %s", arch)
+	return "", fmt.Errorf("no suitable .gz asset found for platform: %s/%s", goos, arch)
 }
 
-// containsArch checks if the asset name matches the architecture
-func ContainsArch(assetName, arch string) bool {
-	return (arch == "amd64" && utils.ContainsAll(assetName, "amd64", "linux") && !utils.ContainsAny(assetName, "compatible", "go")) ||
-		(arch == "arm64" && utils.ContainsAll(assetName, "arm64", "linux") ||
-			(arch == "arm" && utils.ContainsAll(assetName, "arm", "linux")) && !utils.ContainsAny(assetName, "armv5", "armv6", "armv7"))
+// containsArchAndOS checks if the asset name matches the architecture and OS
+func ContainsArchAndOS(assetName, arch, goos string) bool {
+	osOK := (goos == "linux" && utils.ContainsAll(assetName, "linux")) ||
+		(goos == "darwin" && utils.ContainsAny(assetName, "darwin", "mac", "macos")) ||
+		(goos == "windows" && utils.ContainsAny(assetName, "windows", "win"))
+
+	if !osOK {
+		return false
+	}
+
+	switch arch {
+	case "amd64":
+		return utils.ContainsAll(assetName, "amd64") &&
+			!utils.ContainsAny(assetName, "compatible", "go")
+	case "arm64":
+		return utils.ContainsAll(assetName, "arm64")
+	case "arm":
+		return utils.ContainsAll(assetName, "arm") &&
+			!utils.ContainsAny(assetName, "armv5", "armv6", "armv7")
+	default:
+		return false
+	}
 }
