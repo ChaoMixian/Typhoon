@@ -1,54 +1,47 @@
 #!/bin/bash
 
-# 设置项目根目录
-PROJECT_DIR=$(pwd)
+# This script runs Go tests for the Typhoon backend.
 
-# 设置目标构建目录（可以是测试目录）
-BUILD_DIR="${PROJECT_DIR}/build"
-TEST_DIR="${PROJECT_DIR}/tests"
+echo "Changing to backend directory..."
+# Assuming this script is run from the repository root.
+# If it's already in backend/scripts/, then 'cd ..' might be more appropriate.
+# For now, let's assume it could be run from root or backend/scripts.
+if [ -d "backend" ]; then
+  cd backend || exit 1
+else
+  # Potentially already in backend directory or backend/scripts
+  # Check for go.mod to be more certain we are in the Go project root (backend)
+  if [ ! -f "go.mod" ]; then
+    echo "Error: go.mod not found. Please run this script from the repository root or the backend directory."
+    exit 1
+  fi
+fi
 
-# 设置二进制文件名
-BINARY_NAME="Typhoon"  # 根据你的项目名称修改
-BINARY_PATH="${BUILD_DIR}/${BINARY_NAME}"
+echo "Running Go tests..."
+go test -v -coverprofile=coverage.out ./...
 
-# 设置配置文件路径
-CONFIG_FILE="${PROJECT_DIR}/config.json"
-
-# 创建构建目录和测试目录（如果不存在的话）
-mkdir -p "$BUILD_DIR"
-mkdir -p "$TEST_DIR"
-
-# 1. 清理旧的构建文件
-echo "Cleaning previous build..."
-rm -f "$BINARY_PATH"
-
-# 2. 构建 Go 项目
-echo "Building the project..."
-go build -o "$BINARY_PATH" .
-
-# 检查构建是否成功
+# Check if tests were successful
 if [ $? -ne 0 ]; then
-  echo "Build failed. Exiting..."
+  echo "Go tests failed."
   exit 1
 fi
 
-echo "Build successful. Binary file located at: $BINARY_PATH"
+echo "Go tests passed."
+echo "To view coverage report, run: go tool cover -html=coverage.out"
 
-# 3. 移动二进制文件到测试目录
-echo "Moving binary file to test directory..."
-cp "$BINARY_PATH" "$TEST_DIR"
+# Optional: Static analysis checks (can be added here)
+# echo "Running go vet..."
+# go vet ./...
+# if [ $? -ne 0 ]; then
+#   echo "go vet found issues."
+#   # exit 1 # Optionally exit on vet issues
+# fi
 
-# 4. 模拟生产环境（如果需要，你可以设置一些环境变量）
-echo "Setting up production environment..."
-export CONFIG_PATH="$CONFIG_FILE"  # 设置配置文件路径，供程序使用
+# echo "Running staticcheck..."
+# staticcheck ./... # Requires staticcheck to be installed
+# if [ $? -ne 0 ]; then
+#   echo "staticcheck found issues."
+#   # exit 1 # Optionally exit on staticcheck issues
+# fi
 
-# 5. 运行程序模拟生产环境
-echo "Running the program in production mode..."
-cd "$TEST_DIR" || exit
-./"$BINARY_NAME"  # 运行构建好的二进制文件
-
-# 6. 测试完后清理（如果需要）
-echo "Cleaning up after test..."
-rm -f "$TEST_DIR/$BINARY_NAME"
-
-echo "Test completed successfully."
+echo "Backend test script completed."

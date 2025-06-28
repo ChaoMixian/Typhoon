@@ -7,19 +7,22 @@ import (
 )
 
 // GetExecutableDir returns the directory of the executable file
-func GetExecutableDir() string {
+func GetExecutableDir() (string, error) {
 	executablePath, err := os.Executable()
-	// fmt.Printf("executablePath: %v\n", executablePath)
 	if err != nil {
-		log.Printf("Failed to get executable path: %v", err)
+		return "", fmt.Errorf("failed to get executable path: %w", err)
 	}
 	execDir := filepath.Dir(executablePath)
-	return execDir
+	return execDir, nil
 }
 
-// GetMihomoConfigPath returns the path of the Mihomo configuration file
+// GetMihomoConfigPath returns the path of the Mihomo configuration file.
+// It logs a fatal error if GetExecutableDir fails, as these paths are critical.
 func GetMihomoConfigPath(configName string) (string, string) {
-	execDir := GetExecutableDir()
+	execDir, err := GetExecutableDir()
+	if err != nil {
+		log.Fatalf("Critical error: Could not determine executable directory for Mihomo config paths: %v", err)
+	}
 	return filepath.Join(execDir, "mihomo", "config", configName, "config.yaml"),
 		filepath.Join(execDir, "mihomo", "config", configName, "runtime.yaml")
 }

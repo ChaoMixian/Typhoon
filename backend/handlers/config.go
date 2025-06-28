@@ -8,156 +8,134 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// convertToStringSlice converts an interface{} to a []string slice
-func convertToStringSlice(value interface{}) []string {
-	values, ok := value.([]interface{})
-	if !ok {
-		return nil
-	}
-
-	result := make([]string, len(values))
-	for i, v := range values {
-		result[i] = v.(string)
-	}
-	return result
-}
-
-// convertToSubscriptionSlice converts an interface{} to a subscription slice
-func convertToSubscriptionSlice(value interface{}) []struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
-	Path string `json:"path"`
-} {
-	values, ok := value.([]interface{})
-	if !ok {
-		return nil
-	}
-
-	result := make([]struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
-		Path string `json:"path"`
-	}, len(values))
-
-	for i, v := range values {
-		sub := v.(map[string]interface{})
-		path, ok := sub["path"].(string)
-		if !ok {
-			path = "" // 如果没有提供 path 字段，则设置为空字符串
-		}
-		result[i] = struct {
-			Name string `json:"name"`
-			URL  string `json:"url"`
-			Path string `json:"path"`
-		}{
-			Name: sub["name"].(string),
-			URL:  sub["url"].(string),
-			Path: path,
-		}
-	}
-	return result
-}
-
 // ReloadConfigHandler handles API requests to reload configuration
 func ReloadConfigHandler(c *gin.Context) {
-	// 重新加载配置
-	if config.GetConfig(config.ConfigFilePath, true) == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reload the configuration"})
+	// Attempt to reload the configuration. GetConfig will log errors.
+	// If reload is true and an error occurs, GetConfig returns the previous instance and the error.
+	// If initial load fails (which shouldn't happen here as app is running), GetConfig would Fatalf.
+	_, err := config.GetConfig(config.ConfigFilePath, true)
+	if err != nil {
+		// GetConfig already logged the error.
+		// err indicates reload failed but previous config (if any) is still active.
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reload the configuration. Server may be using previous configuration if available. Check server logs for details."})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "Configuration reloaded successfully"})
+}
+
+// UpdateRequestPayload defines the structure for the configuration update request.
+// Fields are pointers to allow distinguishing between a field not being provided
+// and a field being provided with an empty/zero value.
+type UpdateRequestPayload struct {
+	Proxy              *ProxyUpdatePayload               `json:"proxy,omitempty"`
+	Logging            *config.LoggingConfigPart         `json:"logging,omitempty"`
+	SubscriptionManage *config.SubscriptionManageConfigPart `json:"subscriptionManage,omitempty"`
+	API                *config.APIConfigPart             `json:"api,omitempty"`
+}
+
+// ProxyUpdatePayload defines the structure for updating proxy-related configurations.
+type ProxyUpdatePayload struct {
+	CurrentCore *string                     `json:"currentCore,omitempty"`
+	Mode        *string                     `json:"mode,omitempty"`
+	Mihomo      *config.MihomoConfigPart `json:"mihomo,omitempty"`
+	DNS         *config.DNSConfigPart    `json:"dns,omitempty"`
 }
 
 // UpdateConfigHandler handles API requests to update configuration
 func UpdateConfigHandler(c *gin.Context) {
-	// 获取配置文件路径
-	filePath := c.Query("filePath")
-	if filePath == "" {
-		filePath = config.ConfigFilePath // 默认配置文件路径
-	}
+	filePath := config.ConfigFilePath // Use the default config file path
 
-	// 获取要更新的字段和值
-	var updates map[string]interface{}
-	if err := c.ShouldBindJSON(&updates); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+	var payload UpdateRequestPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload: " + err.Error()})
 		return
 	}
 
-	// 更新配置
-	err := config.UpdateConfig(filePath, func(cfg *config.Config) error {
-		for key, value := range updates {
-			switch key {
-			// 代理配置
-			case "proxy.currentCore":
-				cfg.Proxy.CurrentCore = value.(string)
-			case "proxy.mihomo.listenPort":
-				cfg.Proxy.Mihomo.ListenPort = int(value.(float64))
-			case "proxy.mihomo.binPath":
-				cfg.Proxy.Mihomo.BinPath = value.(string)
-			case "proxy.mihomo.currentConfig":
-				cfg.Proxy.Mihomo.CurrentConfig = value.(string)
-			case "proxy.mihomo.controllerAddress":
-				cfg.Proxy.Mihomo.ControllerAddress = value.(string)
-			case "proxy.mihomo.tun.enabled":
-				cfg.Proxy.Mihomo.TUN.Enabled = value.(bool)
-			case "proxy.mihomo.tun.stack":
-				cfg.Proxy.Mihomo.TUN.Stack = value.(string)
-			case "proxy.mihomo.tun.dnsHijaking":
-				cfg.Proxy.Mihomo.TUN.DNSHijaking = value.(string)
+	// It's important to load the full current config first for any parts that are being partially updated
+	// or for fields within parts that are not included in the payload (e.g. updating only Mihomo's port).
+	// The new UpdateXYZConfig functions in config.go handle loading the current state,
+	// applying the change for the *entire part*, and saving.
 
-			// DNS 配置
-			case "proxy.dns.enabled":
-				cfg.Proxy.DNS.Enabled = value.(bool)
-			case "proxy.dns.listen":
-				cfg.Proxy.DNS.Listen = value.(string)
-			case "proxy.dns.upstreamDNS":
-				cfg.Proxy.DNS.UpstreamDNS = convertToStringSlice(value)
-			case "proxy.dns.fallbackDNS":
-				cfg.Proxy.DNS.FallbackDNS = convertToStringSlice(value)
-			case "proxy.dns.dnsHijaking.enabled":
-				cfg.Proxy.DNS.DNSHijaking.Enabled = value.(bool)
-			case "proxy.dns.enhancedMode":
-				cfg.Proxy.DNS.EnhancedMode = value.(string)
-			case "proxy.dns.fakeIPFilter":
-				cfg.Proxy.DNS.FakeIPFilter = convertToStringSlice(value)
+	if payload.API != nil {
+		if err := config.UpdateAPIConfig(filePath, *payload.API); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update API config: " + err.Error()})
+			return
+		}
+	}
 
-			// 日志配置
-			case "logging.level":
-				cfg.Logging.Level = value.(string)
-			case "logging.file":
-				cfg.Logging.File = value.(string)
+	if payload.Logging != nil {
+		if err := config.UpdateLoggingConfig(filePath, *payload.Logging); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update Logging config: " + err.Error()})
+			return
+		}
+	}
 
-			// 订阅配置
-			case "subscriptionManage.enabled":
-				cfg.SubscriptionManage.Enabled = value.(bool)
-			case "subscriptionManage.intervalSeconds":
-				cfg.SubscriptionManage.IntervalSeconds = int(value.(float64))
-			case "subscriptionManage.subscriptions":
-				cfg.SubscriptionManage.Subscriptions = convertToSubscriptionSlice(value)
+	if payload.SubscriptionManage != nil {
+		if err := config.UpdateSubscriptionManageConfig(filePath, *payload.SubscriptionManage); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update SubscriptionManage config: " + err.Error()})
+			return
+		}
+	}
 
-			// API 配置
-			case "api.listenPort":
-				cfg.API.ListenPort = int(value.(float64))
-			case "api.token":
-				cfg.API.Token = value.(string)
+	if payload.Proxy != nil {
+		// For proxy, we need to load the current proxy config and apply individual changes
+		// because CurrentCore, Mode, Mihomo, and DNS can be updated independently or together.
+		// The UpdateProxyXYZConfig functions expect the full part.
+		// So, we load the current config, modify only the parts of Proxy provided in the payload, then call the specific update functions.
 
-			default:
-				return fmt.Errorf("unsupported config key: %s", key)
+		cfg := config.GetConfig(filePath, false) // Get current config (no reload)
+
+		// Create copies of current proxy sub-parts to modify
+		// This is crucial because the UpdateProxyMihomoConfig and UpdateProxyDNSConfig expect the full part.
+		// If the payload only contains a partial update for Mihomo (e.g. just port), we need to preserve other Mihomo fields.
+
+		// Handling Proxy.CurrentCore
+		if payload.Proxy.CurrentCore != nil {
+			if err := config.UpdateProxyCurrentCore(filePath, *payload.Proxy.CurrentCore); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update Proxy.CurrentCore: " + err.Error()})
+				return
 			}
 		}
-		return nil
-	})
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		// Handling Proxy.Mode
+		if payload.Proxy.Mode != nil {
+			if err := config.UpdateProxyMode(filePath, *payload.Proxy.Mode); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update Proxy.Mode: " + err.Error()})
+				return
+			}
+		}
+
+		// Handling Proxy.Mihomo
+		if payload.Proxy.Mihomo != nil {
+			// The UpdateProxyMihomoConfig function takes the *entire* MihomoConfigPart.
+			// If the client sends only a few fields for Mihomo, we must load the current Mihomo config,
+			// apply the partial updates from the payload, and then pass the complete, updated MihomoConfigPart.
+			// This is not ideal. The UpdateProxyMihomoConfig should ideally handle partial updates or
+			// the client must always send the full MihomoConfigPart if it wants to change anything in it.
+
+			// For now, let's assume UpdateProxyMihomoConfig replaces the Mihomo part entirely.
+			// This means the client MUST send the full MihomoConfigPart if it intends to update it.
+			// This simplifies the handler logic.
+			if err := config.UpdateProxyMihomoConfig(filePath, *payload.Proxy.Mihomo); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update Proxy.Mihomo config: " + err.Error()})
+				return
+			}
+		}
+
+		// Handling Proxy.DNS
+		if payload.Proxy.DNS != nil {
+			// Similar to Mihomo, assumes client sends the full DNSConfigPart for updates.
+			if err := config.UpdateProxyDNSConfig(filePath, *payload.Proxy.DNS); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update Proxy.DNS config: " + err.Error()})
+				return
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Configuration updated successfully"})
 }
 
-// Todo: 抽象订阅链接操作，增删改查
+// Todo: 抽象订阅链接操作，增删改查 (This TODO is still relevant, especially for Subscriptions array)
 
 /*
 curl -X PATCH http://localhost:8080/api/v1/updateConfig \

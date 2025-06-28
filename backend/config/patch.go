@@ -21,7 +21,7 @@ func PatchMihomoConfig(inputPath, outputPath, controllerAddress string, port int
 	// 打开原始配置文件
 	file, err := os.Open(inputPath)
 	if err != nil {
-		return fmt.Errorf("failed to open config file: %v", err)
+		return fmt.Errorf("failed to open config file %s: %w", inputPath, err)
 	}
 	defer file.Close()
 
@@ -29,7 +29,7 @@ func PatchMihomoConfig(inputPath, outputPath, controllerAddress string, port int
 	var mihomoCfg MihomoConfig
 	decoder := yaml.NewDecoder(file)
 	if err := decoder.Decode(&mihomoCfg); err != nil {
-		return fmt.Errorf("failed to decode YAML: %v", err)
+		return fmt.Errorf("failed to decode YAML from %s: %w", inputPath, err)
 	}
 
 	// 获取全局配置
@@ -66,14 +66,14 @@ func PatchMihomoConfig(inputPath, outputPath, controllerAddress string, port int
 	// 将修改后的配置写入临时文件
 	outputFile, err := os.Create(outputPath)
 	if err != nil {
-		return fmt.Errorf("failed to create output file: %v", err)
+		return fmt.Errorf("failed to create output file %s: %w", outputPath, err)
 	}
 	defer outputFile.Close()
 
 	encoder := yaml.NewEncoder(outputFile)
 	encoder.SetIndent(2) // 设置缩进
 	if err := encoder.Encode(&mihomoCfg); err != nil {
-		return fmt.Errorf("failed to encode YAML: %v", err)
+		return fmt.Errorf("failed to encode YAML to %s: %w", outputPath, err)
 	}
 
 	return nil
