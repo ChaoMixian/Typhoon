@@ -103,7 +103,7 @@ tun:
 // If not, it creates the directory and a default config.yaml from a template.
 func EnsureMihomoProfileExists(profileName string) error {
 	if profileName == "" {
-		return fmt.Errorf("Mihomo profile name cannot be empty")
+		return fmt.Errorf("mihomo profile name cannot be empty")
 	}
 
 	execDir, err := utils.GetExecutableDir()

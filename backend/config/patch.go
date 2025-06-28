@@ -35,6 +35,9 @@ func PatchMihomoConfig(inputPath, outputPath, controllerAddress string, port int
 	// 获取全局配置
 	// cfg := GetConfig(ConfigFilePath, false)
 	cfg, err := GetConfig(ConfigFilePath, false)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
 
 	// 修改配置字段
 	mihomoCfg.ExternalController = cfg.Proxy.Mihomo.ControllerAddress

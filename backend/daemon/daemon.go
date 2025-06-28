@@ -60,18 +60,33 @@ func StopMihomo() error {
 		return fmt.Errorf("mihomo is not running")
 	}
 
-	// 发 SIGTERM 以优雅停止
 	if err := mihomoProcess.Process.Signal(syscall.SIGTERM); err != nil {
-		return fmt.Errorf("failed to stop Mihomo: %v", err)
+		// 如果发送信号失败，可能进程已经退出
+		if procErr := mihomoProcess.Process.Signal(syscall.Signal(0)); procErr != nil {
+			log.Println("Mihomo process likely already exited before SIGTERM was sent.")
+			mihomoProcess = nil
+			return nil // 视为成功退出
+		}
+		return fmt.Errorf("failed to send SIGTERM to Mihomo: %v", err)
 	}
 
-	// 等待进程退出
-	if err := mihomoProcess.Wait(); err != nil {
+	err := mihomoProcess.Wait()
+	if err != nil {
+		// 检查是否是由 SIGTERM 或 SIGINT 导致的退出
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+				if status.Signal() == syscall.SIGTERM || status.Signal() == syscall.SIGINT {
+					log.Println("Mihomo stopped successfully via signal.")
+					mihomoProcess = nil
+					return nil
+				}
+			}
+		}
 		mihomoProcess = nil
 		return fmt.Errorf("failed to wait for Mihomo termination: %v", err)
 	}
 
-	log.Println("Mihomo stopped successfully")
+	log.Println("Mihomo stopped successfully (exited 0)")
 	mihomoProcess = nil
 	return nil
 }

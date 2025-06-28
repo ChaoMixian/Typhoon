@@ -2,6 +2,8 @@
 /backend/tests
 /backend/build
 /backend/coverage.out
+/backend/run_temp
+/backend/build_temp
 
 /frontend/node_modules
 

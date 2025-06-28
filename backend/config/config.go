@@ -265,10 +265,8 @@ func GetConfig(filePath string, reload bool) (*Config, error) {
 			return instance, fmt.Errorf("failed to reload config from %s: %w", filePath, err)
 		}
 		instance = cfg
-		if reload && err == nil { // Log successful reload only if no error occurred
+		if reload { // Log successful reload only if reload was requested
 			log.Printf("Configuration successfully reloaded from %s.", filePath)
-		} else if instance == nil && err == nil { // Log successful initial load
-			log.Printf("Configuration successfully loaded initially from %s.", filePath)
 		}
 	}
 	return instance, nil

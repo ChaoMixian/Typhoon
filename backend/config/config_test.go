@@ -118,22 +118,7 @@ func TestEnsureMihomoProfileExists(t *testing.T) {
 	}
 }
 
-// Helper to check if a path ends with a subpath (simple version)
-// This is not available in older Go versions, so implementing a basic one.
-// A proper subpath check is more complex.
-func (u *utilsPackage) IsSubPath(path, subPath string) bool {
-	// For this test, we'll just check if it contains the key parts if it's complex.
-	// A true subpath or relative path check is more involved.
-	// This is a placeholder for utils.IsSubPath if it existed.
-	// For now, let's assume it's a simple suffix check for the test.
-	// This is problematic. Let's remove this test part for cfg.Proxy.Mihomo.BinPath for now
-	// as it depends on mocking GetExecutableDir consistently with how LoadConfig uses it.
-	// Instead, in TestLoadConfig_CreatesDefault, we already check it's not empty.
-	return true // Placeholder for now.
-}
-
-// Dummy type for receiver if needed for helper, not used currently.
-type utilsPackage struct{}
+// (Removed unused IsSubPath helper and utilsPackage type)
 
 // Note: To properly test LoadConfig's path defaulting, utils.GetExecutableDir would need to be
 // mockable *before* the config package's init() function runs, or ConfigFilePath needs to be
