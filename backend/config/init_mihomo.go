@@ -139,4 +139,3 @@ func EnsureMihomoProfileExists(profileName string) error {
 	fmt.Printf("Successfully created default Mihomo config for profile '%s'.\n", profileName)
 	return nil
 }
-`

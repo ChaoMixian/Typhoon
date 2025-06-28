@@ -1,6 +1,7 @@
 /old
 /backend/tests
 /backend/build
+/backend/coverage.out
 
 /frontend/node_modules
 

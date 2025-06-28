@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,4 +26,13 @@ func GetMihomoConfigPath(configName string) (string, string) {
 	}
 	return filepath.Join(execDir, "mihomo", "config", configName, "config.yaml"),
 		filepath.Join(execDir, "mihomo", "config", configName, "runtime.yaml")
+}
+
+func IsSubPath(base, sub string) bool {
+	// Check if sub is a subdirectory of base
+	rel, err := filepath.Rel(base, sub)
+	if err != nil {
+		return false // If we can't determine the relative path, return false
+	}
+	return !filepath.IsAbs(rel) // If rel is not absolute, sub is a subpath of base
 }

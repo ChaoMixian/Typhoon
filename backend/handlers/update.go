@@ -15,7 +15,11 @@ import (
 
 // UpdateMihomoHandler handles the Mihomo update process
 func UpdateMihomoHandler(c *gin.Context) {
-	cfg := config.GetConfig(config.ConfigFilePath, true)
+	cfg, cfg_err := config.GetConfig(config.ConfigFilePath, true)
+	if cfg_err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve current configuration: " + cfg_err.Error()})
+		return
+	}
 	// log.Println(cfg.Proxy.Mihomo.BinPath)
 	// 从 URL 参数获取 downloadURL 和目标路径
 	destPath := c.DefaultQuery("destPath", path.Join(cfg.Proxy.Mihomo.BinPath, "..", "mihomo_new"))
@@ -39,8 +43,9 @@ func UpdateMihomoHandler(c *gin.Context) {
 	}
 
 	// Reload the configuration
-	if config.GetConfig(config.ConfigFilePath, true) == nil {
-		log.Fatalf("Failed to reload the configuration")
+	_, reloadErr := config.GetConfig(config.ConfigFilePath, true)
+	if reloadErr != nil {
+		log.Fatalf("Failed to reload the configuration: %v", reloadErr)
 		fmt.Fprintf(c.Writer, "data: {\"status\": \"failed\", \"error\": \"Failed to reload the configuration\"}\n\n")
 		c.Writer.(http.Flusher).Flush()
 	}

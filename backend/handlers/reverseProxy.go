@@ -12,7 +12,7 @@ import (
 // ReverseProxyHandler handles the reverse proxy for Mihomo API
 func ReverseProxyHandler(c *gin.Context) {
 	// 定义 Mihomo API 地址
-	cfg := config.GetConfig(config.ConfigFilePath, true)
+	cfg, err := config.GetConfig(config.ConfigFilePath, true)
 	target := "http://" + cfg.Proxy.Mihomo.ControllerAddress
 	remote, err := url.Parse(target)
 	if err != nil {

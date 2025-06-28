@@ -15,7 +15,7 @@ type SubscriptionUpdateResult struct {
 
 func UpdateSubscriptions() ([]SubscriptionUpdateResult, error) {
 	// Update the subscriptions
-	cfg := config.GetConfig(config.ConfigFilePath, false)
+	cfg, _ := config.GetConfig(config.ConfigFilePath, false)
 	subscriptions := cfg.SubscriptionManage.Subscriptions
 	results := make([]SubscriptionUpdateResult, 0)
 
@@ -27,8 +27,16 @@ func UpdateSubscriptions() ([]SubscriptionUpdateResult, error) {
 			Success: true,
 		}
 
-		configPath := path.Join(utils.GetExecutableDir(), "mihomo", "config", subscription.Name, "config.yaml")
-		err := utils.DownloadWithProgress(subscription.URL, configPath, func(downloaded, total int64) {
+		execDir, err := utils.GetExecutableDir()
+		if err != nil {
+			result.Success = false
+			result.Error = err.Error()
+			results = append(results, result)
+			log.Printf("failed to get executable dir for %s: %v", subscription.Name, err)
+			continue
+		}
+		configPath := path.Join(execDir, "mihomo", "config", subscription.Name, "config.yaml")
+		err = utils.DownloadWithProgress(subscription.URL, configPath, func(downloaded, total int64) {
 			progress := float64(downloaded) / float64(total) * 100
 			log.Printf("Progress: %.2f%%", progress)
 		})

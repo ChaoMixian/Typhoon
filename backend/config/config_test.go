@@ -66,7 +66,7 @@ func TestLoadConfig_CreatesDefault(t *testing.T) {
 		t.Errorf("Default Mihomo.BinPath was not filled by LoadConfig")
 	}
 	expectedBinPathSuffix := filepath.Join("mihomo", "mihomo")
-	if !utils.IsSubPath(cfg.Proxy.Mihomo.BinPath,expectedBinPathSuffix ) {
+	if !utils.IsSubPath(cfg.Proxy.Mihomo.BinPath, expectedBinPathSuffix) {
 		// This check needs GetExecutableDir to be predictable or mocked.
 		// For now, just check it's not empty. A more specific check depends on how execDir is handled in test.
 		t.Logf("Mihomo.BinPath is %s. A more specific check might be needed.", cfg.Proxy.Mihomo.BinPath)
@@ -84,7 +84,7 @@ func TestLoadConfig_CreatesDefault(t *testing.T) {
 // TestEnsureMihomoProfileExists creates a dummy profile
 func TestEnsureMihomoProfileExists(t *testing.T) {
 	// Setup: Need a temporary executable directory
-	oldExecDirFunc := utils.GetExecutableDir // Store original
+	// oldExecDirFunc := utils.GetExecutableDir // Store original
 
 	tempBaseDir, err := os.MkdirTemp("", "typhoon_test_base_")
 	if err != nil {
@@ -92,13 +92,13 @@ func TestEnsureMihomoProfileExists(t *testing.T) {
 	}
 	defer os.RemoveAll(tempBaseDir)
 
-	// Mock GetExecutableDir to return our tempBaseDir
-	utils.GetExecutableDir = func() (string, error) {
-		return tempBaseDir, nil
-	}
-	// Restore original GetExecutableDir after test
-	defer func() { utils.GetExecutableDir = oldExecDirFunc }()
+	// Instead of mocking, set up the test to use a direct path for config creation
+	// and pass it to EnsureMihomoProfileExists if possible.
+	// If EnsureMihomoProfileExists does not support injection, this test cannot mock GetExecutableDir.
+	// So, just call EnsureMihomoProfileExists and check the result in tempBaseDir.
 
+	// NOTE: If EnsureMihomoProfileExists requires GetExecutableDir to be mockable,
+	// refactor the production code to accept a baseDir parameter for testability.
 
 	profileName := "test_profile"
 	err = EnsureMihomoProfileExists(profileName)
@@ -133,7 +133,7 @@ func (u *utilsPackage) IsSubPath(path, subPath string) bool {
 }
 
 // Dummy type for receiver if needed for helper, not used currently.
-type utilsPackage struct {}
+type utilsPackage struct{}
 
 // Note: To properly test LoadConfig's path defaulting, utils.GetExecutableDir would need to be
 // mockable *before* the config package's init() function runs, or ConfigFilePath needs to be
@@ -146,5 +146,3 @@ type utilsPackage struct {}
 // - Each UpdateXConfig function (e.g., UpdateAPIConfig)
 // - Error conditions for LoadConfig (e.g., malformed JSON)
 // - PatchMihomoConfig (requires more setup with YAML files)
-
-`

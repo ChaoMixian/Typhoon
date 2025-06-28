@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"sync"
 )
@@ -69,7 +68,7 @@ type SubscriptionPart struct {
 
 // SubscriptionManageConfigPart defines the structure for subscription management configurations
 type SubscriptionManageConfigPart struct {
-	Enabled         bool               `json:"enabled"`          // 是否启用订阅更新
+	Enabled         bool               `json:"enabled"`         // 是否启用订阅更新
 	IntervalSeconds int                `json:"intervalSeconds"` // 更新间隔时间（单位：秒） // Corrected typo from intervalSenconds
 	Subscriptions   []SubscriptionPart `json:"subscriptions"`
 }
@@ -197,7 +196,10 @@ func LoadConfig(filePath string) (*Config, error) {
 	}
 
 	// 填充默认值
-	executableDir := utils.GetExecutableDir()
+	executableDir, err := utils.GetExecutableDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine executable directory: %w", err)
+	}
 
 	if config.Proxy.Mihomo.BinPath == "" {
 		config.Proxy.Mihomo.BinPath = filepath.Join(executableDir, "mihomo", "mihomo")

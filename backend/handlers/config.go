@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"Typhoon/config"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,16 +26,16 @@ func ReloadConfigHandler(c *gin.Context) {
 // Fields are pointers to allow distinguishing between a field not being provided
 // and a field being provided with an empty/zero value.
 type UpdateRequestPayload struct {
-	Proxy              *ProxyUpdatePayload               `json:"proxy,omitempty"`
-	Logging            *config.LoggingConfigPart         `json:"logging,omitempty"`
+	Proxy              *ProxyUpdatePayload                  `json:"proxy,omitempty"`
+	Logging            *config.LoggingConfigPart            `json:"logging,omitempty"`
 	SubscriptionManage *config.SubscriptionManageConfigPart `json:"subscriptionManage,omitempty"`
-	API                *config.APIConfigPart             `json:"api,omitempty"`
+	API                *config.APIConfigPart                `json:"api,omitempty"`
 }
 
 // ProxyUpdatePayload defines the structure for updating proxy-related configurations.
 type ProxyUpdatePayload struct {
-	CurrentCore *string                     `json:"currentCore,omitempty"`
-	Mode        *string                     `json:"mode,omitempty"`
+	CurrentCore *string                  `json:"currentCore,omitempty"`
+	Mode        *string                  `json:"mode,omitempty"`
 	Mihomo      *config.MihomoConfigPart `json:"mihomo,omitempty"`
 	DNS         *config.DNSConfigPart    `json:"dns,omitempty"`
 }
@@ -82,8 +81,6 @@ func UpdateConfigHandler(c *gin.Context) {
 		// because CurrentCore, Mode, Mihomo, and DNS can be updated independently or together.
 		// The UpdateProxyXYZConfig functions expect the full part.
 		// So, we load the current config, modify only the parts of Proxy provided in the payload, then call the specific update functions.
-
-		cfg := config.GetConfig(filePath, false) // Get current config (no reload)
 
 		// Create copies of current proxy sub-parts to modify
 		// This is crucial because the UpdateProxyMihomoConfig and UpdateProxyDNSConfig expect the full part.
